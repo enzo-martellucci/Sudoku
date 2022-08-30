@@ -5,14 +5,19 @@ import sudoku.model.Sudoku;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 
-public class PanelGame extends JPanel
+public class PanelGame extends JPanel implements KeyListener
 {
 	private static final int BORDER_S = 2;
 	private static final int BORDER_L = 4;
 
 	private final ControllerGUI ctrl;
 	private final Sudoku        model;
+
+	private int lSelected;
+	private int cSelected;
 
 	public PanelGame(ControllerGUI ctrl, Sudoku model, Dimension screen)
 	{
@@ -21,6 +26,10 @@ public class PanelGame extends JPanel
 
 		int size = (int) Math.min(0.9 * screen.width, 0.9 * screen.height);
 		this.setPreferredSize(new Dimension(size, size));
+
+		this.addKeyListener(this);
+		this.setFocusTraversalKeysEnabled(false);
+		this.unselect();
 	}
 
 	public void paintComponent(Graphics g)
@@ -28,68 +37,167 @@ public class PanelGame extends JPanel
 		super.paintComponent(g);
 
 		// Compute size
-		int[][] grid  = this.model.getGrid();
-		int     size  = this.model.getSize();
-		int     sizeC = size * size;
+		int[][] grid   = this.model.getGrid();
+		int     size   = this.model.getSize();
+		int     length = grid.length;
 
 		int w = this.getWidth();
 		int h = this.getHeight();
 
-		int borderSum = (sizeC - size) * BORDER_S + (size + 1) * BORDER_L;
-		int box       = Math.min((w - borderSum) / (sizeC + 2), (h - borderSum) / (sizeC + 2));
-		int line      = borderSum + sizeC * box;
+		int borderSum = (length - size) * BORDER_S + (size + 1) * BORDER_L;
+		int box       = Math.min((w - borderSum) / (length + 2), (h - borderSum) / (length + 2));
+		int line      = borderSum + length * box;
 
-		int oX = (w - line) / 2, oY = (h - line) / 2;
+		Point o = new Point((w - line) / 2, (h - line) / 2);
 
 		// Clear
 		g.setColor(Color.LIGHT_GRAY);
-		g.setFont(new Font("Arial", Font.BOLD, Math.max(12, Math.min(w, h) / 20)));
-		g.fillRect(0, 0, this.getWidth(), this.getHeight());
+		g.setFont(new Font("Arial", Font.BOLD, (int) Math.max(12, Math.min(w, h) / (20 + Math.log10(length) * 5))));
+		g.fillRect(0, 0, w, h);
 		g.setColor(Color.BLACK);
 
 		// Paint grid
 		String      number;
 		FontMetrics metrics = g.getFontMetrics();
-		int         x, y;
+		Point       p       = new Point(o.x + BORDER_L + box, o.y + BORDER_L + box);
 
-		g.fillRect(oX, oY, line, BORDER_L);
-		g.fillRect(oX, oY + line - BORDER_L, line, BORDER_L);
-		g.fillRect(oX, oY, BORDER_L, line);
-		g.fillRect(oX + line - BORDER_L, oY, BORDER_L, line);
+		g.fillRect(o.x, o.y, line, BORDER_L);
+		g.fillRect(o.x, o.y + line - BORDER_L, line, BORDER_L);
+		g.fillRect(o.x, o.y, BORDER_L, line);
+		g.fillRect(o.x + line - BORDER_L, o.y, BORDER_L, line);
 
-		x = oX + BORDER_L + box;
-		y = oY + BORDER_L + box;
-		for (int l = 0; l < grid.length - 1; l++)
+		for (int l = 0; l < length - 1; l++)
 		{
 			int border = l % size == size - 1 ? BORDER_L : BORDER_S;
 
-			g.fillRect(x, oY, border, line);
-			g.fillRect(oX, y, line, border);
+			g.fillRect(p.x, o.y, border, line);
+			g.fillRect(o.x, p.y, line, border);
 
-			x += border + box;
-			y += border + box;
+			p.x += border + box;
+			p.y += border + box;
 		}
 
 		// Paint numbers
-		y = oY + BORDER_L;
-		for (int l = 0; l < grid.length; l++)
+		p.y = o.y + BORDER_L;
+		for (int l = 0; l < length; l++)
 		{
-			x = oX + BORDER_L;
-			for (int c = 0; c < grid[l].length; c++)
+			p.x = o.x + BORDER_L;
+			for (int c = 0; c < length; c++)
 			{
-				g.setColor(Color.WHITE);
-				g.fillRect(x, y, box, box);
+				g.setColor(l == this.lSelected && c == this.cSelected ? Color.ORANGE : Color.WHITE);
+				g.fillRect(p.x, p.y, box, box);
 
 				if (grid[l][c] != 0)
 				{
 					g.setColor(Color.BLACK);
 					number = String.valueOf(grid[l][c]);
-					g.drawString(number, x + box / 2 - metrics.charWidth(number.charAt(0)) / 2, y + box / 2 + metrics.getHeight() / 2 - metrics.getDescent());
+					g.drawString(number, p.x + box / 2 - metrics.stringWidth(number) / 2, p.y + box / 2 + metrics.getHeight() / 2 - metrics.getDescent());
 				}
 
-				x += box + (c % size == size - 1 ? BORDER_L : BORDER_S);
+				p.x += box + (c % size == size - 1 ? BORDER_L : BORDER_S);
 			}
-			y += box + (l % size == size - 1 ? BORDER_L : BORDER_S);
+			p.y += box + (l % size == size - 1 ? BORDER_L : BORDER_S);
 		}
+	}
+
+	private void unselect()
+	{
+		this.lSelected = -1;
+		this.cSelected = -1;
+		this.repaint();
+	}
+
+	private void select(char dir)
+	{
+		int length = this.model.getGrid().length;
+
+		if (this.lSelected == -1)
+		{
+			this.lSelected = this.cSelected = dir == 'U' || dir == 'L' ? length - 1 : 0;
+			this.repaint();
+			return;
+		}
+
+		switch (dir)
+		{
+			case 'U':
+				this.lSelected--;
+				if (this.lSelected == -1)
+				{
+					this.lSelected = length - 1;
+					this.cSelected--;
+					if (this.cSelected == -1)
+						this.cSelected = length - 1;
+				}
+				break;
+			case 'D':
+				this.lSelected++;
+				if (this.lSelected == length)
+				{
+					this.lSelected = 0;
+					this.cSelected++;
+					if (this.cSelected == length)
+						this.cSelected = 0;
+				}
+				break;
+			case 'L':
+				this.cSelected--;
+				if (this.cSelected == -1)
+				{
+					this.cSelected = length - 1;
+					this.lSelected--;
+					if (this.lSelected == -1)
+						this.lSelected = length - 1;
+				}
+				break;
+			case 'R':
+				this.cSelected++;
+				if (this.cSelected == length)
+				{
+					this.cSelected = 0;
+					this.lSelected++;
+					if (this.lSelected == length)
+						this.lSelected = 0;
+				}
+				break;
+		}
+
+		this.repaint();
+	}
+
+	public void keyPressed(KeyEvent e)
+	{
+		if (e.getKeyCode() == KeyEvent.VK_KP_UP || e.getKeyCode() == KeyEvent.VK_UP)
+			this.select('U');
+		else if (e.getKeyCode() == KeyEvent.VK_KP_LEFT || e.getKeyCode() == KeyEvent.VK_LEFT)
+			this.select('L');
+		else if (e.getKeyCode() == KeyEvent.VK_KP_DOWN || e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_ENTER)
+			this.select('D');
+		else if (e.getKeyCode() == KeyEvent.VK_KP_RIGHT || e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_TAB || e.getKeyCode() == KeyEvent.VK_SPACE)
+			this.select('R');
+		else if (e.getKeyChar() >= '1' && e.getKeyChar() <= '9')
+		{
+			if (this.lSelected == -1)
+				return;
+			this.ctrl.place(this.lSelected, this.cSelected, Character.getNumericValue(e.getKeyChar()));
+			this.select('R');
+		}
+		else if (e.getKeyCode() == KeyEvent.VK_DELETE)
+		{
+			if (this.lSelected == -1)
+				return;
+			this.ctrl.unplace(this.lSelected, this.cSelected);
+			this.select('R');
+		}
+		else if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
+			this.unselect();
+	}
+	public void keyReleased(KeyEvent e)
+	{
+
+	}
+	public void keyTyped(KeyEvent e)
+	{
+
 	}
 }

@@ -38,4 +38,9 @@ public class Sudoku
 		this.grid[l][c] = placed;
 		this.nbPlaced++;
 	}
+
+	public void unplace(int l, int c)
+	{
+		this.grid[l][c] = 0;
+	}
 }

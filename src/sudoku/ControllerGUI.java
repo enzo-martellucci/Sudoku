@@ -21,6 +21,12 @@ public class ControllerGUI
 		this.view.maj();
 	}
 
+	public void unplace(int l, int c)
+	{
+		this.model.unplace(l, c);
+		this.view.maj();
+	}
+
 
 	public static void main(String[] args)
 	{
