@@ -5,10 +5,12 @@ import sudoku.model.Sudoku;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
-public class PanelGame extends JPanel implements KeyListener
+public class PanelGame extends JPanel
 {
 	private static final int BORDER_S = 2;
 	private static final int BORDER_L = 4;
@@ -27,7 +29,8 @@ public class PanelGame extends JPanel implements KeyListener
 		int size = (int) Math.min(0.9 * screen.width, 0.9 * screen.height);
 		this.setPreferredSize(new Dimension(size, size));
 
-		this.addKeyListener(this);
+		this.addKeyListener(new Keyboard());
+		this.addMouseListener(new Mouse());
 		this.setFocusTraversalKeysEnabled(false);
 		this.unselect();
 	}
@@ -165,7 +168,13 @@ public class PanelGame extends JPanel implements KeyListener
 		this.repaint();
 	}
 
-	public void keyPressed(KeyEvent e)
+	public void mouseAction(MouseEvent e)
+	{
+		int x = e.getX(), y = e.getY();
+		System.out.printf("[%3d:%3d]", x, y);
+	}
+
+	public void keyboardAction(KeyEvent e)
 	{
 		if (e.getKeyCode() == KeyEvent.VK_KP_UP || e.getKeyCode() == KeyEvent.VK_UP)
 			this.select('U');
@@ -192,12 +201,20 @@ public class PanelGame extends JPanel implements KeyListener
 		else if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
 			this.unselect();
 	}
-	public void keyReleased(KeyEvent e)
-	{
 
+	private class Keyboard extends KeyAdapter
+	{
+		public void keyPressed(KeyEvent e)
+		{
+			PanelGame.this.keyboardAction(e);
+		}
 	}
-	public void keyTyped(KeyEvent e)
-	{
 
+	private class Mouse extends MouseAdapter
+	{
+		public void mouseClicked(MouseEvent e)
+		{
+			PanelGame.this.mouseAction(e);
+		}
 	}
 }
