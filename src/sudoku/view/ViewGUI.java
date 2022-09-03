@@ -1,6 +1,7 @@
 package sudoku.view;
 
 import sudoku.ControllerGUI;
+import sudoku.model.Selector;
 import sudoku.model.Sudoku;
 
 import javax.swing.*;
@@ -9,14 +10,17 @@ import java.awt.event.KeyEvent;
 
 public class ViewGUI extends JFrame implements KeyEventDispatcher
 {
+	// Attributes
 	private final KeyboardFocusManager keyboardFocusManager;
 	private final PanelGame            panelGame;
 
-	public ViewGUI(ControllerGUI ctrl, Sudoku model)
+
+	// Constructor
+	public ViewGUI(ControllerGUI ctrl, Sudoku sudoku, Selector selector)
 	{
 		Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
 
-		this.panelGame = new PanelGame(ctrl, model, screen);
+		this.panelGame = new PanelGame(ctrl, sudoku, selector, screen);
 		this.add(this.panelGame, BorderLayout.CENTER);
 
 		this.keyboardFocusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
@@ -29,6 +33,8 @@ public class ViewGUI extends JFrame implements KeyEventDispatcher
 		this.setVisible(true);
 	}
 
+
+	// Methods
 	public boolean dispatchKeyEvent(KeyEvent e)
 	{
 		this.keyboardFocusManager.redispatchEvent(this.panelGame, e);

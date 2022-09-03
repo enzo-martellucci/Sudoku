@@ -1,35 +1,80 @@
 package sudoku;
 
+import sudoku.model.Selector;
 import sudoku.model.Sudoku;
 import sudoku.view.ViewGUI;
 
 public class ControllerGUI
 {
-	private final Sudoku  model;
-	private final ViewGUI view;
+	// Attributes
+	private final Sudoku   sudoku;
+	private final Selector selector;
+	private final ViewGUI  view;
 
 
-	public ControllerGUI(int size)
+	// Constructor
+	public ControllerGUI(int level)
 	{
-		this.model = new Sudoku(size);
-		this.view  = new ViewGUI(this, this.model);
+		this.sudoku   = new Sudoku(level);
+		this.selector = new Selector(level);
+		this.view     = new ViewGUI(this, this.sudoku, this.selector);
 	}
 
-	public void place(int l, int c, int placed)
+
+	// Methods
+	public void select(char direction)
 	{
-		this.model.place(l, c, placed);
+		this.selector.select(direction);
 		this.view.maj();
 	}
 
-	public void unplace(int l, int c)
+	public void select(int l, int c)
 	{
-		this.model.unplace(l, c);
+		this.selector.select(l, c);
+		this.view.maj();
+	}
+
+	public void unselect()
+	{
+		this.selector.unselect();
+		this.view.maj();
+	}
+
+	public void place(int digit)
+	{
+		if (!this.selector.isSelected() || !this.selector.place(digit))
+			return;
+
+		if (this.selector.isReady())
+		{
+			this.sudoku.place(this.selector.getL(), this.selector.getC(), this.selector.consume());
+			this.selector.select('R');
+		}
+
+		this.view.maj();
+	}
+
+	public void place()
+	{
+		this.sudoku.place(this.selector.getL(), this.selector.getC(), this.selector.consume());
+		this.selector.select('R');
+		this.view.maj();
+	}
+
+	public void remove()
+	{
+		if (!this.selector.isSelected())
+			return;
+
+		this.sudoku.remove(this.selector.getL(), this.selector.getC());
+		this.selector.select('R');
 		this.view.maj();
 	}
 
 
+	// Main
 	public static void main(String[] args)
 	{
-		new ControllerGUI(3);
+		new ControllerGUI(5);
 	}
 }
