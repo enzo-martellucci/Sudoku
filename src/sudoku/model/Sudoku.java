@@ -2,15 +2,17 @@ package sudoku.model;
 
 public class Sudoku
 {
+	private final int     level;
 	private final int     size;
 	private final int[][] grid;
 
 	private int nbPlaced;
 
-	public Sudoku(int size)
+	public Sudoku(int level)
 	{
-		this.size = size;
-		this.grid = new int[this.size * this.size][this.size * this.size];
+		this.level = level;
+		this.size  = this.level * this.level;
+		this.grid  = new int[this.size][this.size];
 
 		this.nbPlaced = 0;
 
@@ -18,7 +20,8 @@ public class Sudoku
 		     this.grid[l][l] = l + 1;
 	}
 
-	public int getSize() { return this.size; }
+	public int getLevel() { return this.level; }
+	public int getSize()  { return this.size; }
 	public int[][] getGrid()
 	{
 		return this.grid;

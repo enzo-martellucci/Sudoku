@@ -10,13 +10,16 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
+import static sudoku.view.ViewSettings.*;
+
 public class PanelGame extends JPanel
 {
-	private static final int BORDER_S = 2;
-	private static final int BORDER_L = 4;
-
 	private final ControllerGUI ctrl;
 	private final Sudoku        model;
+
+	private Point o;
+	private int   box;
+	private int   full;
 
 	private int lSelected;
 	private int cSelected;
@@ -40,66 +43,69 @@ public class PanelGame extends JPanel
 		super.paintComponent(g);
 
 		// Compute size
-		int[][] grid   = this.model.getGrid();
-		int     size   = this.model.getSize();
-		int     length = grid.length;
+		int[][] grid  = this.model.getGrid();
+		int     level = this.model.getLevel();
+		int     size  = this.model.getSize();
 
-		int w = this.getWidth();
-		int h = this.getHeight();
+		int w         = this.getWidth(), h = this.getHeight();
+		int borderSum = (level + 1) * BORDER_D + (size - level) * BORDER_S;
 
-		int borderSum = (length - size) * BORDER_S + (size + 1) * BORDER_L;
-		int box       = Math.min((w - borderSum) / (length + 2), (h - borderSum) / (length + 2));
-		int line      = borderSum + length * box;
-
-		Point o = new Point((w - line) / 2, (h - line) / 2);
+		this.box  = Math.min((w - borderSum) / (size + 2), (h - borderSum) / (size + 2));
+		this.full = borderSum + size * this.box;
+		this.o    = new Point((w - this.full) / 2, (h - this.full) / 2);
 
 		// Clear
-		g.setColor(Color.LIGHT_GRAY);
-		g.setFont(new Font("Arial", Font.BOLD, (int) Math.max(12, Math.min(w, h) / (20 + Math.log10(length) * 5))));
+		g.setColor(BG_COLOR);
+		g.setFont(new Font("Arial", Font.BOLD, (int) Math.max(12, Math.min(45, 0.75 * this.box))));
 		g.fillRect(0, 0, w, h);
-		g.setColor(Color.BLACK);
+		g.setColor(BOX_COLOR);
+		g.fillRect(this.o.x + BORDER_D, this.o.y + BORDER_D, this.full - BORDER_D, this.full - BORDER_D);
+		g.setColor(GRID_COLOR);
 
 		// Paint grid
-		String      number;
-		FontMetrics metrics = g.getFontMetrics();
-		Point       p       = new Point(o.x + BORDER_L + box, o.y + BORDER_L + box);
+		g.fillRect(this.o.x, this.o.y, this.full, BORDER_D);
+		g.fillRect(this.o.x, this.o.y + this.full - BORDER_D, this.full, BORDER_D);
+		g.fillRect(this.o.x, this.o.y, BORDER_D, full);
+		g.fillRect(this.o.x + this.full - BORDER_D, this.o.y, BORDER_D, this.full);
 
-		g.fillRect(o.x, o.y, line, BORDER_L);
-		g.fillRect(o.x, o.y + line - BORDER_L, line, BORDER_L);
-		g.fillRect(o.x, o.y, BORDER_L, line);
-		g.fillRect(o.x + line - BORDER_L, o.y, BORDER_L, line);
-
-		for (int l = 0; l < length - 1; l++)
+		Point p = new Point(this.o.x + BORDER_D + this.box, this.o.y + BORDER_D + this.box);
+		for (int i = 0; i < size - 1; i++)
 		{
-			int border = l % size == size - 1 ? BORDER_L : BORDER_S;
+			int border = i % level == level - 1 ? BORDER_D : BORDER_S;
 
-			g.fillRect(p.x, o.y, border, line);
-			g.fillRect(o.x, p.y, line, border);
+			g.fillRect(p.x, this.o.y, border, this.full);
+			g.fillRect(this.o.x, p.y, this.full, border);
 
-			p.x += border + box;
-			p.y += border + box;
+			p.x += border + this.box;
+			p.y += border + this.box;
 		}
 
 		// Paint numbers
-		p.y = o.y + BORDER_L;
-		for (int l = 0; l < length; l++)
+		FontMetrics metrics = g.getFontMetrics();
+		g.setColor(NUM_COLOR);
+
+		p.y = this.o.y + BORDER_D;
+		for (int l = 0; l < size; l++)
 		{
-			p.x = o.x + BORDER_L;
-			for (int c = 0; c < length; c++)
+			p.x = this.o.x + BORDER_D;
+			for (int c = 0; c < size; c++)
 			{
-				g.setColor(l == this.lSelected && c == this.cSelected ? Color.ORANGE : Color.WHITE);
-				g.fillRect(p.x, p.y, box, box);
+				if (l == this.lSelected && c == this.cSelected)
+				{
+					g.setColor(SELECTED_COLOR);
+					g.fillRect(p.x, p.y, this.box, this.box);
+					g.setColor(NUM_COLOR);
+				}
 
 				if (grid[l][c] != 0)
 				{
-					g.setColor(Color.BLACK);
-					number = String.valueOf(grid[l][c]);
-					g.drawString(number, p.x + box / 2 - metrics.stringWidth(number) / 2, p.y + box / 2 + metrics.getHeight() / 2 - metrics.getDescent());
+					String number = String.valueOf(grid[l][c]);
+					g.drawString(number, p.x + this.box / 2 - metrics.stringWidth(number) / 2, p.y + this.box / 2 + metrics.getHeight() / 2 - metrics.getDescent());
 				}
 
-				p.x += box + (c % size == size - 1 ? BORDER_L : BORDER_S);
+				p.x += this.box + (c % level == level - 1 ? BORDER_D : BORDER_S);
 			}
-			p.y += box + (l % size == size - 1 ? BORDER_L : BORDER_S);
+			p.y += this.box + (l % level == level - 1 ? BORDER_D : BORDER_S);
 		}
 	}
 
@@ -170,8 +176,24 @@ public class PanelGame extends JPanel
 
 	public void mouseAction(MouseEvent e)
 	{
-		int x = e.getX(), y = e.getY();
-		System.out.printf("[%3d:%3d]", x, y);
+		Point p = new Point(e.getX(), e.getY());
+		Point o = new Point(this.o.x + BORDER_S + BORDER_H, this.o.y + BORDER_S + BORDER_H);
+
+		int level = this.model.getLevel();
+		int full  = this.full - (BORDER_D + BORDER_S + BORDER_H);
+		int box   = this.box + BORDER_S;
+
+		if (p.x < o.x || p.y < o.y || p.x > o.x + full || p.y > o.y + full)
+		{
+			this.unselect();
+			return;
+		}
+
+		p.setLocation(p.x - o.x, p.y - o.y);
+		this.lSelected = (p.y - ((p.y / (level * box + BORDER_S)) * BORDER_S)) / box;
+		this.cSelected = (p.x - ((p.x / (level * box + BORDER_S)) * BORDER_S)) / box;
+
+		this.repaint();
 	}
 
 	public void keyboardAction(KeyEvent e)
@@ -212,7 +234,7 @@ public class PanelGame extends JPanel
 
 	private class Mouse extends MouseAdapter
 	{
-		public void mouseClicked(MouseEvent e)
+		public void mousePressed(MouseEvent e)
 		{
 			PanelGame.this.mouseAction(e);
 		}
